@@ -1,0 +1,14 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="630" fill="#0F0E0C"/>
+  <rect x="80" y="76" width="1040" height="478" rx="28" fill="#1A1915" stroke="#2A2820"/>
+  <text x="130" y="190" fill="#C8A97E" font-family="Georgia, serif" font-size="34">ShotlistAI</text>
+  <text x="130" y="305" fill="#E8E0D4" font-family="Georgia, serif" font-size="72">Stop building shot lists</text>
+  <text x="130" y="385" fill="#E8E0D4" font-family="Georgia, serif" font-size="72">from scratch.</text>
+  <text x="132" y="455" fill="#7A7268" font-family="Arial, sans-serif" font-size="28">AI wedding photography documents in minutes.</text>
+  <rect x="760" y="160" width="280" height="310" rx="16" fill="#0F0E0C" stroke="#C8A97E"/>
+  <rect x="790" y="206" width="220" height="14" rx="7" fill="#C8A97E"/>
+  <rect x="790" y="250" width="170" height="10" rx="5" fill="#7A7268"/>
+  <rect x="790" y="282" width="200" height="10" rx="5" fill="#7A7268"/>
+  <rect x="790" y="314" width="140" height="10" rx="5" fill="#7A7268"/>
+  <rect x="790" y="370" width="190" height="44" rx="8" fill="#C8A97E"/>
+</svg>
