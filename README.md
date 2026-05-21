@@ -1,17 +1,43 @@
 # ShotlistAI
 
-ShotlistAI is an MVP SaaS app for wedding photographers. It generates a shot list, day timeline, second shooter brief, client prep email, gear checklist, and day-of risk plan from a short wedding brief.
+Production-ready Next.js 14 app for AI-generated wedding photography shot lists, timelines, second shooter briefs, and client prep emails.
 
-## Free AI Provider
+## Stack
 
-This version uses the Google Gemini API through a server-side Next.js route. That keeps the API key out of the browser.
+- Next.js 14 App Router
+- Tailwind CSS
+- Anthropic Claude (`claude-sonnet-4-20250514`)
+- Supabase Auth + Postgres
+- Stripe Checkout + Billing Portal + Webhooks
+- Resend dependency ready for transactional email flows
 
-1. Create a free API key in Google AI Studio.
-2. Copy `.env.example` to `.env.local`.
-3. Set `GEMINI_API_KEY`.
-4. Run `npm run dev`.
+## Environment
 
-The default model is `gemini-3.1-flash-lite`, which is intended for low-cost/high-volume use and currently has free-tier input/output tokens. You can change it with `GEMINI_MODEL`.
+Copy `.env.example` to `.env.local` and set:
+
+```bash
+ANTHROPIC_API_KEY=
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=
+STRIPE_PRO_PRICE_ID=
+STRIPE_STUDIO_PRICE_ID=
+RESEND_API_KEY=
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+```
+
+## Database
+
+Run `supabase/schema.sql` in your Supabase SQL editor. It creates:
+
+- `public.users`
+- `public.weddings`
+- `public.usage`
+- RLS policies
+- Auth trigger to create public profiles
 
 ## Commands
 
@@ -21,19 +47,14 @@ npm run dev
 npm run build
 ```
 
-## Current MVP Scope
+## Routes
 
-- Wedding brief form
-- Gemini-backed generation endpoint at `/api/generate`
-- Saved weddings in browser local storage
-- Copy active output
-- Download JSON
-- Print-friendly output
-- Sample output mode for testing without an API key
-
-## Next SaaS Steps
-
-- Add Supabase Auth and database persistence
-- Add per-user rate limits and monthly usage caps
-- Add PDF export
-- Add Stripe only after there are users asking to pay
+- `/` landing page
+- `/login`, `/signup`, `/forgot-password`
+- `/dashboard`
+- `/dashboard/saved`
+- `/dashboard/account`
+- `/api/generate`
+- `/api/create-checkout`
+- `/api/create-portal`
+- `/api/webhook`
