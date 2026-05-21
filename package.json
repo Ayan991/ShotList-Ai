@@ -1,20 +1,32 @@
 {
   "name": "shotlistai",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "next dev -H 0.0.0.0",
     "build": "next build",
-    "start": "next start -H 0.0.0.0"
+    "start": "next start -H 0.0.0.0",
+    "lint": "next lint"
   },
   "dependencies": {
-    "lucide-react": "latest",
-    "next": "latest",
-    "react": "latest",
-    "react-dom": "latest"
+    "@anthropic-ai/sdk": "^0.66.0",
+    "@react-pdf/renderer": "^4.3.1",
+    "@supabase/ssr": "^0.8.0",
+    "@supabase/supabase-js": "^2.87.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.468.0",
+    "next": "14.2.35",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "resend": "^6.6.0",
+    "stripe": "^20.0.0"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "autoprefixer": "^10.4.22",
+    "postcss": "^8.5.10",
+    "tailwindcss": "^3.4.19"
+  },
   "overrides": {
     "postcss": "^8.5.10"
   }
