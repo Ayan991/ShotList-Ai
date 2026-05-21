@@ -1,19 +1,41 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { formatDate } from "@/lib/utils";
-import { getAuthedUser } from "@/lib/supabase/server";
+import { getClerkUserId } from "@/lib/auth";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 export const metadata = {
   title: "Saved Weddings"
 };
 
 export default async function SavedWeddingsPage() {
-  const { supabase, user } = await getAuthedUser();
-  if (!user) redirect("/login");
+  const userId = getClerkUserId();
+  if (!userId) redirect("/login");
+  const supabase = createSupabaseAdminClient();
+
+  const { data: profile } = await supabase.from("users").select("id").eq("clerk_user_id", userId).maybeSingle();
+  if (!profile?.id) {
+    return (
+      <div>
+        <div className="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-end">
+          <div>
+            <p className="font-sans text-xs font-semibold uppercase tracking-[0.2em] text-gold">Saved Weddings</p>
+            <h1 className="mt-3 font-serif text-4xl text-text md:text-5xl">Past wedding plans.</h1>
+          </div>
+          <Link href="/dashboard" className="primary-button">New Wedding</Link>
+        </div>
+        <div className="rounded border border-dashed border-line bg-surface p-10 text-center">
+          <p className="font-serif text-3xl text-text">No saved weddings yet.</p>
+          <p className="mt-3 font-sans text-sm text-muted">Generated plans will appear here automatically.</p>
+        </div>
+      </div>
+    );
+  }
+
   const { data: weddings } = await supabase
     .from("weddings")
     .select("id, couple_names, date, venue, created_at")
-    .eq("user_id", user.id)
+    .eq("user_id", profile.id)
     .order("created_at", { ascending: false });
 
   return (

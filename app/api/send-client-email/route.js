@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
+import { auth } from "@clerk/nextjs/server";
 import { createResendClient } from "@/lib/resend";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { getAuthedUser } from "@/lib/supabase/server";
+import { ensureUserProfileByClerkId } from "@/lib/user-profile";
 
 export async function POST(request) {
-  const { user } = await getAuthedUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const { userId } = auth();
+  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { weddingId, to } = await request.json();
   if (!weddingId || !to) {
@@ -14,11 +15,12 @@ export async function POST(request) {
 
   try {
     const admin = createSupabaseAdminClient();
+    const profile = await ensureUserProfileByClerkId(admin, userId);
     const { data: wedding, error } = await admin
       .from("weddings")
       .select("couple_names, result_json")
       .eq("id", weddingId)
-      .eq("user_id", user.id)
+      .eq("user_id", profile.id)
       .single();
 
     if (error) throw error;

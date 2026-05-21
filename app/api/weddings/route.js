@@ -1,16 +1,18 @@
 import { NextResponse } from "next/server";
+import { auth } from "@clerk/nextjs/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { getAuthedUser } from "@/lib/supabase/server";
+import { ensureUserProfileByClerkId } from "@/lib/user-profile";
 
 export async function GET() {
-  const { user } = await getAuthedUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const { userId } = auth();
+  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const admin = createSupabaseAdminClient();
+  const profile = await ensureUserProfileByClerkId(admin, userId);
   const { data, error } = await admin
     .from("weddings")
     .select("id, couple_names, date, venue, inputs_json, result_json, created_at")
-    .eq("user_id", user.id)
+    .eq("user_id", profile.id)
     .order("created_at", { ascending: false });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -18,13 +20,14 @@ export async function GET() {
 }
 
 export async function POST(request) {
-  const { user } = await getAuthedUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const { userId } = auth();
+  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json();
   const inputs = body.inputs || {};
   const result = body.result || {};
   const admin = createSupabaseAdminClient();
+  const profile = await ensureUserProfileByClerkId(admin, userId);
 
   if (body.weddingId) {
     const { data, error } = await admin
@@ -37,7 +40,7 @@ export async function POST(request) {
         result_json: result
       })
       .eq("id", body.weddingId)
-      .eq("user_id", user.id)
+      .eq("user_id", profile.id)
       .select("id")
       .single();
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -47,7 +50,7 @@ export async function POST(request) {
   const { data, error } = await admin
     .from("weddings")
     .insert({
-      user_id: user.id,
+      user_id: profile.id,
       couple_names: inputs.coupleNames || "Untitled wedding",
       date: inputs.weddingDate || null,
       venue: inputs.venueName || null,

@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
+import { auth, currentUser } from "@clerk/nextjs/server";
 import { getSiteUrl } from "@/lib/env";
 import { PLANS } from "@/lib/plans";
 import { createStripeClient } from "@/lib/stripe";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { getAuthedUser } from "@/lib/supabase/server";
+import { ensureUserProfileByClerkId } from "@/lib/user-profile";
 
 export async function POST(request) {
-  const { user } = await getAuthedUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const { userId } = auth();
+  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { plan } = await request.json();
   const selectedPlan = PLANS[plan];
@@ -21,17 +22,18 @@ export async function POST(request) {
   try {
     const admin = createSupabaseAdminClient();
     const stripe = createStripeClient();
-    const { data: profile } = await admin.from("users").select("*").eq("id", user.id).maybeSingle();
+    const profile = await ensureUserProfileByClerkId(admin, userId);
+    const user = await currentUser();
 
     let customerId = profile?.stripe_customer_id;
     if (!customerId) {
       const customer = await stripe.customers.create({
-        email: user.email,
+        email: user?.emailAddresses?.[0]?.emailAddress || profile.email,
         name: profile?.name || undefined,
-        metadata: { user_id: user.id }
+        metadata: { user_id: profile.id, clerk_user_id: userId }
       });
       customerId = customer.id;
-      await admin.from("users").update({ stripe_customer_id: customerId }).eq("id", user.id);
+      await admin.from("users").update({ stripe_customer_id: customerId }).eq("id", profile.id);
     }
 
     const session = await stripe.checkout.sessions.create({
@@ -40,7 +42,7 @@ export async function POST(request) {
       line_items: [{ price: priceId, quantity: 1 }],
       success_url: `${getSiteUrl()}/dashboard/account?checkout=success`,
       cancel_url: `${getSiteUrl()}/dashboard/account?checkout=cancelled`,
-      metadata: { user_id: user.id, plan }
+      metadata: { user_id: profile.id, clerk_user_id: userId, plan }
     });
 
     return NextResponse.json({ url: session.url });

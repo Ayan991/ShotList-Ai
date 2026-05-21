@@ -7,7 +7,8 @@ Production-ready Next.js 14 app for AI-generated wedding photography shot lists,
 - Next.js 14 App Router
 - Tailwind CSS
 - Anthropic Claude (`claude-sonnet-4-20250514`)
-- Supabase Auth + Postgres
+- Clerk Auth
+- Supabase Postgres
 - Stripe Checkout + Billing Portal + Webhooks
 - Resend dependency ready for transactional email flows
 
@@ -16,6 +17,8 @@ Production-ready Next.js 14 app for AI-generated wedding photography shot lists,
 Copy `.env.example` to `.env.local` and set:
 
 ```bash
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=
+CLERK_SECRET_KEY=
 ANTHROPIC_API_KEY=
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
@@ -36,8 +39,7 @@ Run `supabase/schema.sql` in your Supabase SQL editor. It creates:
 - `public.users`
 - `public.weddings`
 - `public.usage`
-- RLS policies
-- Auth trigger to create public profiles
+- Clerk-linked user identity (`clerk_user_id`)
 
 ## Commands
 

@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
+import { auth } from "@clerk/nextjs/server";
 import { buildWeddingPrompt, createAnthropicClient, extractJsonObject, SHOTLIST_SYSTEM_PROMPT } from "@/lib/anthropic";
 import { getCurrentMonthKey, getPlanLimit, hasUnlimitedUsage } from "@/lib/plans";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { getAuthedUser } from "@/lib/supabase/server";
+import { ensureUserProfileByClerkId } from "@/lib/user-profile";
 
 export async function POST(request) {
-  const { user } = await getAuthedUser();
-  if (!user) {
+  const { userId } = auth();
+  if (!userId) {
     return NextResponse.json({ error: "You must be logged in to generate a wedding plan." }, { status: 401 });
   }
 
@@ -23,12 +24,12 @@ export async function POST(request) {
 
   try {
     const admin = createSupabaseAdminClient();
-    const profile = await ensureUserProfile(admin, user);
+    const profile = await ensureUserProfileByClerkId(admin, userId);
     const month = getCurrentMonthKey();
     const { data: usageRow } = await admin
       .from("usage")
       .select("id, count")
-      .eq("user_id", user.id)
+      .eq("user_id", profile.id)
       .eq("month", month)
       .maybeSingle();
 
@@ -53,7 +54,7 @@ export async function POST(request) {
     const { data: wedding, error: weddingError } = await admin
       .from("weddings")
       .insert({
-        user_id: user.id,
+        user_id: profile.id,
         couple_names: inputs.coupleNames,
         date: inputs.weddingDate || null,
         venue: inputs.venueName || null,
@@ -69,32 +70,13 @@ export async function POST(request) {
     if (usageRow?.id) {
       await admin.from("usage").update({ count: nextCount }).eq("id", usageRow.id);
     } else {
-      await admin.from("usage").insert({ user_id: user.id, month, count: nextCount });
+      await admin.from("usage").insert({ user_id: profile.id, month, count: nextCount });
     }
 
     return NextResponse.json({ result: parsed, weddingId: wedding.id, usage: { month, count: nextCount } });
   } catch (error) {
     return NextResponse.json({ error: error.message || "Generation failed." }, { status: 500 });
   }
-}
-
-async function ensureUserProfile(admin, user) {
-  const { data } = await admin.from("users").select("*").eq("id", user.id).maybeSingle();
-  if (data) return data;
-
-  const { data: created, error } = await admin
-    .from("users")
-    .insert({
-      id: user.id,
-      email: user.email,
-      name: user.user_metadata?.name || user.user_metadata?.full_name || null,
-      plan: "free"
-    })
-    .select("*")
-    .single();
-
-  if (error) throw error;
-  return created;
 }
 
 function sanitizeInputs(body) {

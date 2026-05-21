@@ -1,4 +1,5 @@
 import { DM_Sans, Playfair_Display } from "next/font/google";
+import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
 
 const playfair = Playfair_Display({
@@ -44,7 +45,9 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en" className={`${playfair.variable} ${dmSans.variable}`}>
-      <body>{children}</body>
+      <body>
+        <ClerkProvider>{children}</ClerkProvider>
+      </body>
     </html>
   );
 }

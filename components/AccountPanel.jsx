@@ -1,40 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
+import Link from "next/link";
 import { Spinner } from "@/components/Spinner";
 import { Toast } from "@/components/Toast";
 
 export function AccountPanel({ profile, usage }) {
-  const router = useRouter();
-  const supabase = createSupabaseBrowserClient();
-  const [name, setName] = useState(profile?.name || "");
-  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState("");
   const [toast, setToast] = useState(null);
-
-  async function updateProfile() {
-    setLoading("profile");
-    const { error } = await supabase.from("users").update({ name }).eq("id", profile.id);
-    setLoading("");
-    if (error) setToast({ type: "error", message: error.message });
-    else {
-      setToast({ type: "success", message: "Profile updated." });
-      router.refresh();
-    }
-  }
-
-  async function updatePassword() {
-    setLoading("password");
-    const { error } = await supabase.auth.updateUser({ password });
-    setLoading("");
-    if (error) setToast({ type: "error", message: error.message });
-    else {
-      setPassword("");
-      setToast({ type: "success", message: "Password updated." });
-    }
-  }
 
   async function checkout(plan) {
     setLoading(plan);
@@ -80,26 +53,15 @@ export function AccountPanel({ profile, usage }) {
           <div className="mt-6 space-y-4">
             <label className="block">
               <span className="label">Name</span>
-              <input className="input" value={name} onChange={(event) => setName(event.target.value)} />
+              <input className="input opacity-70" value={profile.name || "No name set"} disabled />
             </label>
             <label className="block">
               <span className="label">Email</span>
-              <input className="input opacity-70" value={profile.email} disabled />
+              <input className="input opacity-70" value={profile.email || "No email"} disabled />
             </label>
-            <button onClick={updateProfile} disabled={loading === "profile"} className="primary-button">
-              {loading === "profile" && <Spinner />} Save profile
-            </button>
-          </div>
-
-          <div className="mt-8 border-t border-line pt-6">
-            <h3 className="font-serif text-2xl text-text">Change password</h3>
-            <label className="mt-4 block">
-              <span className="label">New password</span>
-              <input className="input" type="password" value={password} onChange={(event) => setPassword(event.target.value)} />
-            </label>
-            <button onClick={updatePassword} disabled={!password || loading === "password"} className="primary-button mt-4">
-              {loading === "password" && <Spinner />} Update password
-            </button>
+            <Link href="/user-profile" className="primary-button">
+              Manage account in Clerk
+            </Link>
           </div>
         </section>
 

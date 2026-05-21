@@ -2,16 +2,21 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { ResultViewer } from "@/components/ResultViewer";
 import { formatDate } from "@/lib/utils";
-import { getAuthedUser } from "@/lib/supabase/server";
+import { getClerkUserId } from "@/lib/auth";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 export default async function SavedWeddingDetailPage({ params }) {
-  const { supabase, user } = await getAuthedUser();
-  if (!user) redirect("/login");
+  const userId = getClerkUserId();
+  if (!userId) redirect("/login");
+  const supabase = createSupabaseAdminClient();
+  const { data: profile } = await supabase.from("users").select("id").eq("clerk_user_id", userId).maybeSingle();
+  if (!profile?.id) notFound();
+
   const { data: wedding } = await supabase
     .from("weddings")
     .select("id, couple_names, date, venue, inputs_json, result_json")
     .eq("id", params.id)
-    .eq("user_id", user.id)
+    .eq("user_id", profile.id)
     .maybeSingle();
 
   if (!wedding) notFound();

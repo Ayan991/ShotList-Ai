@@ -1,5 +1,6 @@
 import { getCurrentMonthKey } from "@/lib/plans";
-import { getAuthedUser } from "@/lib/supabase/server";
+import { getClerkUserId } from "@/lib/auth";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { DashboardGenerator } from "@/components/DashboardGenerator";
 import { redirect } from "next/navigation";
 
@@ -8,13 +9,26 @@ export const metadata = {
 };
 
 export default async function DashboardPage() {
-  const { supabase, user } = await getAuthedUser();
-  if (!user) redirect("/login");
+  const userId = getClerkUserId();
+  if (!userId) redirect("/login");
+  const supabase = createSupabaseAdminClient();
 
-  const [{ data: profile }, { data: usage }] = await Promise.all([
-    supabase.from("users").select("id, email, name, plan").eq("id", user.id).maybeSingle(),
-    supabase.from("usage").select("count").eq("user_id", user.id).eq("month", getCurrentMonthKey()).maybeSingle()
-  ]);
+  const { data: profile } = await supabase
+    .from("users")
+    .select("id, email, name, plan, clerk_user_id")
+    .eq("clerk_user_id", userId)
+    .maybeSingle();
+
+  if (!profile?.id) {
+    return <DashboardGenerator profile={{ plan: "free" }} usage={{ count: 0 }} />;
+  }
+
+  const { data: usage } = await supabase
+    .from("usage")
+    .select("count")
+    .eq("user_id", profile.id)
+    .eq("month", getCurrentMonthKey())
+    .maybeSingle();
 
   return <DashboardGenerator profile={profile || { plan: "free" }} usage={usage || { count: 0 }} />;
 }

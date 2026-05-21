@@ -1,20 +1,34 @@
 import { redirect } from "next/navigation";
 import { AccountPanel } from "@/components/AccountPanel";
 import { getCurrentMonthKey } from "@/lib/plans";
-import { getAuthedUser } from "@/lib/supabase/server";
+import { getClerkUserId } from "@/lib/auth";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 export const metadata = {
   title: "Account"
 };
 
 export default async function AccountPage() {
-  const { supabase, user } = await getAuthedUser();
-  if (!user) redirect("/login");
+  const userId = getClerkUserId();
+  if (!userId) redirect("/login");
+  const supabase = createSupabaseAdminClient();
 
-  const [{ data: profile }, { data: usage }] = await Promise.all([
-    supabase.from("users").select("id, email, name, plan, stripe_customer_id").eq("id", user.id).maybeSingle(),
-    supabase.from("usage").select("count").eq("user_id", user.id).eq("month", getCurrentMonthKey()).maybeSingle()
-  ]);
+  const { data: profile } = await supabase
+    .from("users")
+    .select("id, email, name, plan, stripe_customer_id, clerk_user_id")
+    .eq("clerk_user_id", userId)
+    .maybeSingle();
 
-  return <AccountPanel profile={profile || { id: user.id, email: user.email, name: "", plan: "free" }} usage={usage || { count: 0 }} />;
+  if (!profile) {
+    return <AccountPanel profile={{ id: "", email: "", name: "", plan: "free", clerk_user_id: userId }} usage={{ count: 0 }} />;
+  }
+
+  const { data: usage } = await supabase
+    .from("usage")
+    .select("count")
+    .eq("user_id", profile.id)
+    .eq("month", getCurrentMonthKey())
+    .maybeSingle();
+
+  return <AccountPanel profile={profile} usage={usage || { count: 0 }} />;
 }

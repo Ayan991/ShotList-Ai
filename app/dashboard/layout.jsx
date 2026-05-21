@@ -1,14 +1,21 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { CreditCard, FolderOpen, Settings, Wand2 } from "lucide-react";
-import { getAuthedUser } from "@/lib/supabase/server";
+import { getClerkUserId } from "@/lib/auth";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { SignOutButton } from "@/components/SignOutButton";
 
 export default async function DashboardLayout({ children }) {
-  const { supabase, user } = await getAuthedUser();
-  if (!user) redirect("/login");
+  const userId = getClerkUserId();
+  if (!userId) redirect("/login");
 
-  const { data: profile } = await supabase.from("users").select("name, email, plan").eq("id", user.id).maybeSingle();
+  const supabase = createSupabaseAdminClient();
+
+  const { data: profile } = await supabase
+    .from("users")
+    .select("name, email, plan")
+    .eq("clerk_user_id", userId)
+    .maybeSingle();
 
   return (
     <main className="min-h-screen bg-obsidian text-text">
