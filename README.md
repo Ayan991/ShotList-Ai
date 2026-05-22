@@ -6,7 +6,7 @@ Production-ready Next.js 14 app for AI-generated wedding photography shot lists,
 
 - Next.js 14 App Router
 - Tailwind CSS
-- Anthropic Claude (`claude-sonnet-4-20250514`)
+- NVIDIA API (`meta/llama-3.3-70b-instruct`)
 - Clerk Auth
 - Supabase Postgres
 - Dodo Payments checkout + customer portal
@@ -19,7 +19,7 @@ Copy `.env.example` to `.env.local` and set:
 ```bash
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=
 CLERK_SECRET_KEY=
-ANTHROPIC_API_KEY=
+NVIDIA_API_KEY=
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=

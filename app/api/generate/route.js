@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
-import { buildWeddingPrompt, createAnthropicClient, extractJsonObject, SHOTLIST_SYSTEM_PROMPT } from "@/lib/anthropic";
+import { buildWeddingPrompt, extractJsonObject, generateWithNvidia } from "@/lib/anthropic";
 import { getCurrentMonthKey, getPlanLimit, hasUnlimitedUsage } from "@/lib/plans";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { ensureUserProfileByClerkId } from "@/lib/user-profile";
@@ -39,16 +39,7 @@ export async function POST(request) {
       return NextResponse.json({ error: "Free plan limit reached. Upgrade to generate more weddings this month." }, { status: 402 });
     }
 
-    const anthropic = createAnthropicClient();
-    const message = await anthropic.messages.create({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 5000,
-      temperature: 0.45,
-      system: SHOTLIST_SYSTEM_PROMPT,
-      messages: [{ role: "user", content: buildWeddingPrompt(inputs) }]
-    });
-
-    const text = message.content?.map((part) => (part.type === "text" ? part.text : "")).join("") || "";
+    const text = await generateWithNvidia(buildWeddingPrompt(inputs));
     const parsed = normalizeResult(extractJsonObject(text), profile.plan);
 
     const { data: wedding, error: weddingError } = await admin
