@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
-import { getSiteUrl } from "@/lib/env";
-import { createStripeClient } from "@/lib/stripe";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { ensureUserProfileByClerkId } from "@/lib/user-profile";
 
@@ -11,18 +9,12 @@ export async function POST() {
 
   try {
     const admin = createSupabaseAdminClient();
-    const profile = await ensureUserProfileByClerkId(admin, userId);
-    if (!profile?.stripe_customer_id) {
-      return NextResponse.json({ error: "No Stripe customer found yet." }, { status: 400 });
+    await ensureUserProfileByClerkId(admin, userId);
+    const url = process.env.DODO_CUSTOMER_PORTAL_URL;
+    if (!url) {
+      return NextResponse.json({ error: "Dodo customer portal URL is not configured." }, { status: 500 });
     }
-
-    const stripe = createStripeClient();
-    const session = await stripe.billingPortal.sessions.create({
-      customer: profile.stripe_customer_id,
-      return_url: `${getSiteUrl()}/dashboard/account`
-    });
-
-    return NextResponse.json({ url: session.url });
+    return NextResponse.json({ url });
   } catch (error) {
     return NextResponse.json({ error: error.message || "Portal failed." }, { status: 500 });
   }

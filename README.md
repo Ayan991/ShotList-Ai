@@ -9,7 +9,7 @@ Production-ready Next.js 14 app for AI-generated wedding photography shot lists,
 - Anthropic Claude (`claude-sonnet-4-20250514`)
 - Clerk Auth
 - Supabase Postgres
-- Stripe Checkout + Billing Portal + Webhooks
+- Dodo Payments checkout + customer portal
 - Resend dependency ready for transactional email flows
 
 ## Environment
@@ -23,11 +23,9 @@ ANTHROPIC_API_KEY=
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
-STRIPE_SECRET_KEY=
-STRIPE_WEBHOOK_SECRET=
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=
-STRIPE_PRO_PRICE_ID=
-STRIPE_STUDIO_PRICE_ID=
+DODO_PRO_CHECKOUT_URL=
+DODO_STUDIO_CHECKOUT_URL=
+DODO_CUSTOMER_PORTAL_URL=
 RESEND_API_KEY=
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ```
@@ -59,4 +57,4 @@ npm run build
 - `/api/generate`
 - `/api/create-checkout`
 - `/api/create-portal`
-- `/api/webhook`
+- `/api/webhook` (stubbed for Dodo integration)

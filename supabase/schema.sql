@@ -6,7 +6,6 @@ create table if not exists public.users (
   email text not null unique,
   name text,
   plan text not null default 'free' check (plan in ('free', 'pro', 'studio')),
-  stripe_customer_id text,
   created_at timestamptz not null default now()
 );
 

@@ -15,7 +15,7 @@ export default async function AccountPage() {
 
   const { data: profile } = await supabase
     .from("users")
-    .select("id, email, name, plan, stripe_customer_id, clerk_user_id")
+    .select("id, email, name, plan, clerk_user_id")
     .eq("clerk_user_id", userId)
     .maybeSingle();
 

@@ -43,7 +43,7 @@ const faqs = [
   ["Can I use it for different venue types?", "Yes. The form captures venue type, guest count, style, timing, and special moments so the output is tailored to the day."],
   ["Is the free plan actually useful?", "Yes. Free users can generate one shot list per month, which is enough to test the workflow before upgrading."],
   ["Do clients see the AI output?", "Only if you share it. You can copy, export, or edit the output before sending anything to a couple or second shooter."],
-  ["Are API keys exposed to users?", "No. AI generation, Stripe, Supabase admin operations, and email sending happen server-side."]
+  ["Are API keys exposed to users?", "No. AI generation, billing operations, Supabase admin operations, and email sending happen server-side."]
 ];
 
 export default function LandingPage() {
