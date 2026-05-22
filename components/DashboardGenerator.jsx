@@ -119,6 +119,7 @@ export function DashboardGenerator({ profile, usage }) {
   }
 
   async function completeOnboarding() {
+    setShowOnboarding(false);
     try {
       const response = await fetch("/api/profile", {
         method: "PATCH",
@@ -126,7 +127,6 @@ export function DashboardGenerator({ profile, usage }) {
         body: JSON.stringify({ onboarded: true })
       });
       if (!response.ok) throw new Error("Could not save onboarding state.");
-      setShowOnboarding(false);
     } catch (error) {
       setToast({ type: "error", message: error.message });
     }
