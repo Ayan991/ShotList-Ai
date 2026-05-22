@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { pdf, Document, Page, Text, StyleSheet } from "@react-pdf/renderer";
 import { Download, Loader2, RefreshCcw, Save, Wand2 } from "lucide-react";
 import { Toast } from "@/components/Toast";
 
@@ -31,6 +30,7 @@ export function DashboardGenerator({ profile, usage }) {
   const [weddingId, setWeddingId] = useState(null);
   const [activeTab, setActiveTab] = useState("shotList");
   const [loading, setLoading] = useState(false);
+  const [pdfLoading, setPdfLoading] = useState(false);
   const [toast, setToast] = useState(null);
 
   const usedLabel = useMemo(() => {
@@ -94,15 +94,36 @@ export function DashboardGenerator({ profile, usage }) {
 
   async function downloadPdf() {
     if (!result) return;
-    const blob = await pdf(
-      <PdfDocument title={`${form.coupleNames || "Wedding"} - ${labelForTab(activeTab)}`} activeTab={activeTab} result={result} />
-    ).toBlob();
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `${slugify(form.coupleNames || "wedding")}-${activeTab}.pdf`;
-    link.click();
-    URL.revokeObjectURL(url);
+    setPdfLoading(true);
+    try {
+      const { pdf, Document, Page, Text, StyleSheet } = await import("@react-pdf/renderer");
+      const styles = StyleSheet.create({
+        page: { padding: 36, fontFamily: "Helvetica", color: "#1A1915" },
+        kicker: { fontSize: 10, letterSpacing: 2, color: "#8F6A38", marginBottom: 10 },
+        title: { fontSize: 24, marginBottom: 22 },
+        line: { fontSize: 11, lineHeight: 1.45, marginBottom: 14 },
+        body: { fontSize: 12, lineHeight: 1.55 }
+      });
+      const blob = await pdf(
+        <Document>
+          <Page size="A4" style={styles.page}>
+            <Text style={styles.kicker}>ShotlistAI</Text>
+            <Text style={styles.title}>{`${form.coupleNames || "Wedding"} - ${labelForTab(activeTab)}`}</Text>
+            <PdfContent activeTab={activeTab} result={result} styles={styles} Text={Text} />
+          </Page>
+        </Document>
+      ).toBlob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${slugify(form.coupleNames || "wedding")}-${activeTab}.pdf`;
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      setToast({ type: "error", message: error.message || "PDF generation failed." });
+    } finally {
+      setPdfLoading(false);
+    }
   }
 
   return (
@@ -160,7 +181,9 @@ export function DashboardGenerator({ profile, usage }) {
               <h2 className="mt-2 font-serif text-3xl text-text">{result ? form.coupleNames : "No wedding generated yet"}</h2>
             </div>
             <div className="flex flex-wrap gap-2">
-              <button onClick={downloadPdf} disabled={!result} className="btn-outline"><Download size={16} /> Download PDF</button>
+              <button onClick={downloadPdf} disabled={!result || pdfLoading} className="btn-outline">
+                {pdfLoading ? <Loader2 className="animate-spin" size={16} /> : <Download size={16} />} Download PDF
+              </button>
               <button onClick={saveWedding} disabled={!result} className="btn-outline"><Save size={16} /> Save Wedding</button>
               <button onClick={generate} disabled={!result || loading} className="btn-outline"><RefreshCcw size={16} /> Regenerate</button>
             </div>
@@ -270,47 +293,27 @@ function Select({ label, value, onChange, options }) {
   );
 }
 
-function PdfDocument({ title, activeTab, result }) {
-  return (
-    <Document>
-      <Page size="A4" style={pdfStyles.page}>
-        <Text style={pdfStyles.kicker}>ShotlistAI</Text>
-        <Text style={pdfStyles.title}>{title}</Text>
-        <PdfContent activeTab={activeTab} result={result} />
-      </Page>
-    </Document>
-  );
-}
-
-function PdfContent({ activeTab, result }) {
+function PdfContent({ activeTab, result, styles, Text }) {
   if (activeTab === "timeline") {
     return result.timeline?.map((item, index) => (
-      <Text key={index} style={pdfStyles.line}>{item.time} - {item.event} ({item.duration}){"\n"}{item.note}</Text>
+      <Text key={index} style={styles.line}>{item.time} - {item.event} ({item.duration}){"\n"}{item.note}</Text>
     ));
   }
 
   if (activeTab === "secondShooterBrief") {
-    return <Text style={pdfStyles.body}>{result.secondShooterBrief}</Text>;
+    return <Text style={styles.body}>{result.secondShooterBrief}</Text>;
   }
 
   if (activeTab === "clientEmail") {
-    return <Text style={pdfStyles.body}>{result.clientEmail}</Text>;
+    return <Text style={styles.body}>{result.clientEmail}</Text>;
   }
 
   return result.shotList?.map((category) => (
-    <Text key={category.category} style={pdfStyles.line}>
+    <Text key={category.category} style={styles.line}>
       {category.category}{"\n"}{category.shots?.map((shot, index) => `${index + 1}. ${shot}`).join("\n")}
     </Text>
   ));
 }
-
-const pdfStyles = StyleSheet.create({
-  page: { padding: 36, fontFamily: "Helvetica", color: "#1A1915" },
-  kicker: { fontSize: 10, letterSpacing: 2, color: "#8F6A38", marginBottom: 10 },
-  title: { fontSize: 24, marginBottom: 22 },
-  line: { fontSize: 11, lineHeight: 1.45, marginBottom: 14 },
-  body: { fontSize: 12, lineHeight: 1.55 }
-});
 
 function labelForTab(tab) {
   return tabs.find(([id]) => id === tab)?.[1] || "Output";

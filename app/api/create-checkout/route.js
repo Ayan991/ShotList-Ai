@@ -14,7 +14,9 @@ export async function POST(request) {
   }
 
   const checkoutUrl =
-    plan === "pro" ? process.env.DODO_PRO_CHECKOUT_URL : process.env.DODO_STUDIO_CHECKOUT_URL;
+    plan === "pro"
+      ? process.env.DODO_PRO_CHECKOUT_URL || process.env.NEXT_PUBLIC_DODO_PRO_URL
+      : process.env.DODO_STUDIO_CHECKOUT_URL || process.env.NEXT_PUBLIC_DODO_STUDIO_URL;
   if (!checkoutUrl) {
     return NextResponse.json({ error: "Dodo checkout URL is not configured." }, { status: 500 });
   }

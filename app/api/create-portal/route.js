@@ -10,7 +10,7 @@ export async function POST() {
   try {
     const admin = createSupabaseAdminClient();
     await ensureUserProfileByClerkId(admin, userId);
-    const url = process.env.DODO_CUSTOMER_PORTAL_URL;
+    const url = process.env.DODO_CUSTOMER_PORTAL_URL || process.env.NEXT_PUBLIC_DODO_CUSTOMER_PORTAL_URL;
     if (!url) {
       return NextResponse.json({ error: "Dodo customer portal URL is not configured." }, { status: 500 });
     }
