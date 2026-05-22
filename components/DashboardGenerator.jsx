@@ -128,7 +128,7 @@ export function DashboardGenerator({ profile, usage }) {
       });
       if (!response.ok) throw new Error("Could not save onboarding state.");
     } catch (error) {
-      setToast({ type: "error", message: error.message });
+      console.warn("[ShotlistAI] Onboarding state save failed:", error);
     }
   }
 
