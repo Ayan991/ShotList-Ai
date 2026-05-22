@@ -1,16 +1,14 @@
 import { SignUp } from "@clerk/nextjs";
 
-export const metadata = {
-  title: "Sign up"
-};
-
-export default function SignupPage() {
+export default function SignupCatchAllPage() {
   return (
     <div className="rounded border border-line bg-surface p-6 shadow-editorial">
       <SignUp
         path="/signup"
         routing="path"
         signInUrl="/login"
+        fallbackRedirectUrl="/dashboard"
+        forceRedirectUrl="/dashboard"
         appearance={{
           variables: {
             colorBackground: "#1A1915",
