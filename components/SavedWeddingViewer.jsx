@@ -9,7 +9,7 @@ const tabs = [
   ["clientEmail", "Client Email"]
 ];
 
-export function ResultViewer({ result }) {
+export function SavedWeddingViewer({ result }) {
   const [activeTab, setActiveTab] = useState("shotList");
 
   return (

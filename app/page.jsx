@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Clock, Download, FileText, Mail, MapPin, Sparkles, Users } from "lucide-react";
 import { PricingToggle } from "@/components/PricingToggle";
+import { LandingNavbar } from "@/components/LandingNavbar";
 
 const features = [
   ["Shot List Generator", "10+ clean categories with priority moments, details, family, ceremony, reception, and exits.", FileText],
@@ -49,7 +50,7 @@ const faqs = [
 export default function LandingPage() {
   return (
     <main className="luxury-shell min-h-screen overflow-hidden">
-      <Navbar />
+      <LandingNavbar />
       <section className="mx-auto grid w-full max-w-7xl gap-14 px-5 pb-24 pt-16 md:grid-cols-[0.95fr_1.05fr] md:px-8 md:pt-24">
         <div className="flex flex-col justify-center">
           <p className="mb-5 font-sans text-xs font-semibold uppercase tracking-[0.24em] text-gold">
@@ -122,7 +123,7 @@ export default function LandingPage() {
                   <p className="font-sans text-xs text-muted">{item.role}</p>
                 </div>
               </div>
-              <p className="font-serif text-xl leading-8 text-text">"{item.quote}"</p>
+              <p className="font-serif text-xl leading-8 text-text">&ldquo;{item.quote}&rdquo;</p>
             </article>
           ))}
         </div>
@@ -141,24 +142,6 @@ export default function LandingPage() {
 
       <Footer />
     </main>
-  );
-}
-
-function Navbar() {
-  return (
-    <header className="sticky top-0 z-30 border-b border-line/80 bg-obsidian/88 backdrop-blur">
-      <nav className="mx-auto flex min-h-20 max-w-7xl items-center justify-between gap-4 px-5 md:px-8">
-        <Link href="/" className="font-serif text-2xl text-text">ShotlistAI</Link>
-        <div className="hidden items-center gap-8 font-sans text-sm text-muted md:flex">
-          <a href="#features" className="transition hover:text-gold">Features</a>
-          <a href="#pricing" className="transition hover:text-gold">Pricing</a>
-          <Link href="/login" className="transition hover:text-gold">Login</Link>
-        </div>
-        <Link href="/signup" className="rounded-sm bg-gold px-4 py-3 font-sans text-xs font-semibold uppercase tracking-[0.14em] text-obsidian transition hover:opacity-90">
-          Start Free Trial
-        </Link>
-      </nav>
-    </header>
   );
 }
 

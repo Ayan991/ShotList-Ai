@@ -4,11 +4,27 @@ import { buildWeddingPrompt, extractJsonObject, generateWithNvidia } from "@/lib
 import { getCurrentMonthKey, getPlanLimit, hasUnlimitedUsage } from "@/lib/plans";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { ensureUserProfileByClerkId } from "@/lib/user-profile";
+import { sanitizeString } from "@/lib/utils";
+
+const rateLimitMap = new Map();
+
+function isRateLimited(userId) {
+  const now = Date.now();
+  const windowMs = 60 * 1000;
+  const maxRequests = 5;
+  const timestamps = (rateLimitMap.get(userId) || []).filter((t) => now - t < windowMs);
+  if (timestamps.length >= maxRequests) return true;
+  rateLimitMap.set(userId, [...timestamps, now]);
+  return false;
+}
 
 export async function POST(request) {
   const { userId } = auth();
   if (!userId) {
     return NextResponse.json({ error: "You must be logged in to generate a wedding plan." }, { status: 401 });
+  }
+  if (isRateLimited(userId)) {
+    return NextResponse.json({ error: "Too many requests. Please wait a moment." }, { status: 429 });
   }
 
   let inputs;
@@ -72,16 +88,16 @@ export async function POST(request) {
 
 function sanitizeInputs(body) {
   return {
-    coupleNames: String(body.coupleNames || "").slice(0, 160).trim(),
-    weddingDate: String(body.weddingDate || "").slice(0, 40),
-    venueName: String(body.venueName || "").slice(0, 180).trim(),
-    venueType: String(body.venueType || "Church").slice(0, 80),
-    guestCount: String(body.guestCount || "50-150").slice(0, 40),
-    photographyStyle: String(body.photographyStyle || "Romantic/Editorial").slice(0, 80),
-    ceremonyTime: String(body.ceremonyTime || "").slice(0, 40),
-    coverageHours: String(body.coverageHours || "").slice(0, 40),
-    specialMoments: String(body.specialMoments || "").slice(0, 1200),
-    outputs: Array.isArray(body.outputs) ? body.outputs.map(String).slice(0, 8) : []
+    coupleNames: sanitizeString(body.coupleNames, 160),
+    weddingDate: sanitizeString(body.weddingDate, 40),
+    venueName: sanitizeString(body.venueName, 180),
+    venueType: sanitizeString(body.venueType || "Church", 80),
+    guestCount: sanitizeString(body.guestCount || "50-150", 40),
+    photographyStyle: sanitizeString(body.photographyStyle || "Romantic/Editorial", 80),
+    ceremonyTime: sanitizeString(body.ceremonyTime, 40),
+    coverageHours: sanitizeString(body.coverageHours, 40),
+    specialMoments: sanitizeString(body.specialMoments, 1200),
+    outputs: Array.isArray(body.outputs) ? body.outputs.map((item) => sanitizeString(String(item), 60)).slice(0, 8) : []
   };
 }
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Download, Loader2, RefreshCcw, Save, Wand2 } from "lucide-react";
+import { Clipboard, Download, Loader2, Mail, RefreshCcw, Save, Wand2 } from "lucide-react";
 import { Toast } from "@/components/Toast";
 
 const initialForm = {
@@ -32,11 +32,21 @@ export function DashboardGenerator({ profile, usage }) {
   const [loading, setLoading] = useState(false);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [toast, setToast] = useState(null);
+  const [showEmailForm, setShowEmailForm] = useState(false);
+  const [sendToEmail, setSendToEmail] = useState("");
+  const [sendingEmail, setSendingEmail] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(!profile?.onboarded);
 
-  const usedLabel = useMemo(() => {
-    if (profile?.plan === "pro" || profile?.plan === "studio") return `${usage?.count || 0} generated`;
-    return `${usage?.count || 0} of 1 weddings used`;
-  }, [profile?.plan, usage?.count]);
+  const isUnlimited = profile?.plan === "pro" || profile?.plan === "studio";
+  const usedCount = usage?.count || 0;
+  const usagePct = Math.min(100, Math.round((usedCount / 1) * 100));
+  const nextResetDate = useMemo(() => {
+    const d = new Date();
+    const nextMonth = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1));
+    return nextMonth.toLocaleDateString("en-US", { month: "long", day: "numeric" });
+  }, []);
+  const shotCount = result?.shotList?.reduce((a, c) => a + c.shots.length, 0) ?? 0;
+  const timelineCount = result?.timeline?.length ?? 0;
 
   function update(field, value) {
     setForm((current) => ({ ...current, [field]: value }));
@@ -66,6 +76,7 @@ export function DashboardGenerator({ profile, usage }) {
       setResult(data.result);
       setWeddingId(data.weddingId);
       setActiveTab("shotList");
+      setShowEmailForm(false);
       setToast({ type: "success", message: "Wedding pack generated and saved." });
     } catch (error) {
       setToast({ type: "error", message: error.message });
@@ -89,6 +100,56 @@ export function DashboardGenerator({ profile, usage }) {
       setToast({ type: "success", message: "Wedding saved." });
     } catch (error) {
       setToast({ type: "error", message: error.message });
+    }
+  }
+
+  async function handleUpgrade(plan = "pro") {
+    try {
+      const response = await fetch("/api/create-checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Checkout failed.");
+      window.location.href = data.url;
+    } catch (error) {
+      setToast({ type: "error", message: error.message });
+    }
+  }
+
+  async function completeOnboarding() {
+    try {
+      const response = await fetch("/api/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ onboarded: true })
+      });
+      if (!response.ok) throw new Error("Could not save onboarding state.");
+      setShowOnboarding(false);
+    } catch (error) {
+      setToast({ type: "error", message: error.message });
+    }
+  }
+
+  async function sendClientEmail() {
+    if (!weddingId || !sendToEmail || !result?.clientEmail) return;
+    setSendingEmail(true);
+    try {
+      const response = await fetch("/api/send-client-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ weddingId, to: sendToEmail, content: result.clientEmail })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Email failed.");
+      setToast({ type: "success", message: `Email sent to ${sendToEmail}` });
+      setShowEmailForm(false);
+      setSendToEmail("");
+    } catch (error) {
+      setToast({ type: "error", message: error.message });
+    } finally {
+      setSendingEmail(false);
     }
   }
 
@@ -129,13 +190,41 @@ export function DashboardGenerator({ profile, usage }) {
   return (
     <>
       <Toast message={toast?.message} type={toast?.type} onClose={() => setToast(null)} />
+      {showOnboarding && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-obsidian/80 p-4">
+          <div className="w-full max-w-xl rounded border border-gold bg-surface p-6">
+            <h2 className="font-serif text-4xl text-text">Welcome to ShotlistAI</h2>
+            <ul className="mt-5 grid gap-3 font-sans text-sm leading-6 text-muted">
+              <li>Fill in your wedding details in under 60 seconds.</li>
+              <li>Generate your shot list, timeline, brief, and client email.</li>
+              <li>Save each wedding and export polished PDFs for your team.</li>
+            </ul>
+            <button onClick={completeOnboarding} className="primary-button mt-6">
+              Generate My First Shot List →
+            </button>
+          </div>
+        </div>
+      )}
       <div className="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-end">
         <div>
           <p className="font-sans text-xs font-semibold uppercase tracking-[0.2em] text-gold">New Wedding</p>
           <h1 className="mt-3 font-serif text-4xl text-text md:text-5xl">Generate a shoot-ready plan.</h1>
         </div>
-        <div className="rounded border border-line bg-surface px-4 py-3 font-sans text-sm text-muted">
-          Usage: <span className="text-text">{usedLabel}</span>
+        <div className="rounded border border-line bg-surface px-4 py-3">
+          {isUnlimited ? (
+            <div className="flex items-center gap-3">
+              <span className="inline-flex rounded-sm bg-green-700 px-2 py-1 font-sans text-xs text-white">Unlimited plan</span>
+              <span className="font-sans text-sm text-muted">{usedCount} weddings generated</span>
+            </div>
+          ) : (
+            <div>
+              <p className="font-sans text-sm text-text">{usedCount} of 1 weddings used this month</p>
+              <div className="mt-2 h-[6px] w-56 rounded bg-obsidian">
+                <div className="h-[6px] rounded bg-gold" style={{ width: `${usagePct}%` }} />
+              </div>
+              <p className="mt-2 font-sans text-xs text-muted">Resets on {nextResetDate}</p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -179,15 +268,39 @@ export function DashboardGenerator({ profile, usage }) {
             <div>
               <p className="font-sans text-xs font-semibold uppercase tracking-[0.2em] text-gold">Results</p>
               <h2 className="mt-2 font-serif text-3xl text-text">{result ? form.coupleNames : "No wedding generated yet"}</h2>
+              {result ? (
+                <p className="mt-1 font-sans text-xs text-muted">{shotCount} shots · {timelineCount} timeline blocks</p>
+              ) : null}
             </div>
             <div className="flex flex-wrap gap-2">
               <button onClick={downloadPdf} disabled={!result || pdfLoading} className="btn-outline">
                 {pdfLoading ? <Loader2 className="animate-spin" size={16} /> : <Download size={16} />} Download PDF
               </button>
+              {activeTab === "clientEmail" && result ? (
+                <button onClick={() => setShowEmailForm((v) => !v)} className="btn-outline">
+                  <Mail size={16} /> Send to Client
+                </button>
+              ) : null}
               <button onClick={saveWedding} disabled={!result} className="btn-outline"><Save size={16} /> Save Wedding</button>
               <button onClick={generate} disabled={!result || loading} className="btn-outline"><RefreshCcw size={16} /> Regenerate</button>
             </div>
           </div>
+          {showEmailForm && activeTab === "clientEmail" && result ? (
+            <div className="border-b border-line p-4">
+              <div className="flex flex-col gap-2 md:flex-row">
+                <input
+                  type="email"
+                  value={sendToEmail}
+                  onChange={(e) => setSendToEmail(e.target.value)}
+                  placeholder="Client email address"
+                  className="input"
+                />
+                <button onClick={sendClientEmail} disabled={sendingEmail || !sendToEmail} className="primary-button">
+                  {sendingEmail ? <Loader2 className="animate-spin" size={16} /> : "Send"}
+                </button>
+              </div>
+            </div>
+          ) : null}
           <div className="flex gap-2 overflow-x-auto border-b border-line p-3">
             {tabs.map(([id, label]) => (
               <button key={id} onClick={() => setActiveTab(id)} className={activeTab === id ? "tab-active" : "tab-idle"}>
@@ -196,7 +309,16 @@ export function DashboardGenerator({ profile, usage }) {
             ))}
           </div>
           <div className="max-h-[720px] overflow-y-auto p-5">
-            {result ? <ResultTab activeTab={activeTab} result={result} /> : <EmptyResults />}
+            {result ? (
+              <ResultTab
+                activeTab={activeTab}
+                result={result}
+                profile={profile}
+                handleUpgrade={handleUpgrade}
+              />
+            ) : (
+              <EmptyResults />
+            )}
           </div>
         </section>
       </div>
@@ -204,7 +326,25 @@ export function DashboardGenerator({ profile, usage }) {
   );
 }
 
-function ResultTab({ activeTab, result }) {
+function ResultTab({ activeTab, result, profile, handleUpgrade }) {
+  const isLocked = profile?.plan === "free" && ["timeline", "secondShooterBrief", "clientEmail"].includes(activeTab);
+  const tabLabel = labelForTab(activeTab);
+  if (isLocked && result) {
+    return (
+      <div className="grid min-h-64 place-items-center rounded border border-dashed border-gold/30 bg-obsidian p-8 text-center">
+        <div>
+          <p className="font-serif text-3xl text-text">Unlock {tabLabel}</p>
+          <p className="mt-3 max-w-sm font-sans text-sm leading-6 text-muted">
+            Upgrade to Pro to access timelines, second shooter briefs, and client prep emails.
+          </p>
+          <button onClick={() => handleUpgrade("pro")} className="primary-button mt-6">
+            Upgrade to Pro — $29/mo →
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (activeTab === "timeline") {
     return (
       <div className="space-y-3">
@@ -250,9 +390,22 @@ function ResultTab({ activeTab, result }) {
 }
 
 function LongText({ title, text }) {
+  const [copied, setCopied] = useState(false);
+
+  async function copyText() {
+    await navigator.clipboard.writeText(text || "");
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
   return (
     <article className="rounded border border-line bg-obsidian p-5">
-      <h3 className="font-serif text-2xl text-gold">{title}</h3>
+      <div className="flex items-center justify-between">
+        <h3 className="font-serif text-2xl text-gold">{title}</h3>
+        <button onClick={copyText} className="btn-outline">
+          <Clipboard size={16} /> {copied ? "Copied!" : "Copy"}
+        </button>
+      </div>
       <p className="mt-4 whitespace-pre-line font-sans text-sm leading-7 text-text">{text}</p>
     </article>
   );

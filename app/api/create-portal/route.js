@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
+import { env } from "@/lib/env";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { ensureUserProfileByClerkId } from "@/lib/user-profile";
 
@@ -10,7 +11,10 @@ export async function POST() {
   try {
     const admin = createSupabaseAdminClient();
     await ensureUserProfileByClerkId(admin, userId);
-    const url = process.env.DODO_CUSTOMER_PORTAL_URL || process.env.NEXT_PUBLIC_DODO_CUSTOMER_PORTAL_URL;
+    if (!env.dodoSecretKey) {
+      return NextResponse.json({ error: "Dodo is not configured." }, { status: 500 });
+    }
+    const url = "https://app.dodopayments.com";
     if (!url) {
       return NextResponse.json({ error: "Dodo customer portal URL is not configured." }, { status: 500 });
     }

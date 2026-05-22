@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { ensureUserProfileByClerkId } from "@/lib/user-profile";
+import { sanitizeString } from "@/lib/utils";
 
 export async function GET() {
   const { userId } = auth();
@@ -26,20 +27,24 @@ export async function POST(request) {
   const body = await request.json();
   const inputs = body.inputs || {};
   const result = body.result || {};
+  const weddingId = sanitizeString(body.weddingId || "", 80);
+  const coupleNames = sanitizeString(inputs.coupleNames || "Untitled wedding", 160);
+  const weddingDate = sanitizeString(inputs.weddingDate || "", 40);
+  const venueName = sanitizeString(inputs.venueName || "", 180);
   const admin = createSupabaseAdminClient();
   const profile = await ensureUserProfileByClerkId(admin, userId);
 
-  if (body.weddingId) {
+  if (weddingId) {
     const { data, error } = await admin
       .from("weddings")
       .update({
-        couple_names: inputs.coupleNames,
-        date: inputs.weddingDate || null,
-        venue: inputs.venueName || null,
+        couple_names: coupleNames,
+        date: weddingDate || null,
+        venue: venueName || null,
         inputs_json: inputs,
         result_json: result
       })
-      .eq("id", body.weddingId)
+      .eq("id", weddingId)
       .eq("user_id", profile.id)
       .select("id")
       .single();
@@ -51,9 +56,9 @@ export async function POST(request) {
     .from("weddings")
     .insert({
       user_id: profile.id,
-      couple_names: inputs.coupleNames || "Untitled wedding",
-      date: inputs.weddingDate || null,
-      venue: inputs.venueName || null,
+      couple_names: coupleNames,
+      date: weddingDate || null,
+      venue: venueName || null,
       inputs_json: inputs,
       result_json: result
     })

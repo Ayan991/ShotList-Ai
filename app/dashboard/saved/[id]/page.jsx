@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { ResultViewer } from "@/components/ResultViewer";
+import { SavedWeddingViewer } from "@/components/SavedWeddingViewer";
 import { formatDate } from "@/lib/utils";
 import { getClerkUserId } from "@/lib/auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
@@ -28,7 +28,7 @@ export default async function SavedWeddingDetailPage({ params }) {
         <h1 className="mt-4 font-serif text-4xl text-text md:text-5xl">{wedding.couple_names}</h1>
         <p className="mt-3 font-sans text-sm text-muted">{formatDate(wedding.date)} · {wedding.venue || "No venue"}</p>
       </div>
-      <ResultViewer result={wedding.result_json} />
+      <SavedWeddingViewer result={wedding.result_json} />
     </div>
   );
 }

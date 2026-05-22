@@ -6,6 +6,7 @@ create table if not exists public.users (
   email text not null unique,
   name text,
   plan text not null default 'free' check (plan in ('free', 'pro', 'studio')),
+  onboarded boolean not null default false,
   created_at timestamptz not null default now()
 );
 

@@ -4,6 +4,7 @@ import { CreditCard, FolderOpen, Settings, Wand2 } from "lucide-react";
 import { getClerkUserId } from "@/lib/auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { SignOutButton } from "@/components/SignOutButton";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 export default async function DashboardLayout({ children }) {
   const userId = getClerkUserId();
@@ -45,7 +46,9 @@ export default async function DashboardLayout({ children }) {
             </p>
           </div>
         </aside>
-        <section className="min-w-0 p-5 md:p-8">{children}</section>
+        <section className="min-w-0 p-5 md:p-8">
+          <ErrorBoundary>{children}</ErrorBoundary>
+        </section>
       </div>
     </main>
   );

@@ -17,17 +17,30 @@ Production-ready Next.js 14 app for AI-generated wedding photography shot lists,
 Copy `.env.example` to `.env.local` and set:
 
 ```bash
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=
-CLERK_SECRET_KEY=
-NVIDIA_API_KEY=
+# Supabase
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
-DODO_PRO_CHECKOUT_URL=
-DODO_STUDIO_CHECKOUT_URL=
-DODO_CUSTOMER_PORTAL_URL=
+
+# Clerk Auth
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=
+CLERK_SECRET_KEY=
+NEXT_PUBLIC_CLERK_SIGN_IN_URL=/login
+NEXT_PUBLIC_CLERK_SIGN_UP_URL=/signup
+NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/dashboard
+NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/dashboard
+
+# Dodo Payments
+DODO_SECRET_KEY=
+DODO_WEBHOOK_SECRET=
+DODO_PRO_PRODUCT_ID=
+DODO_STUDIO_PRODUCT_ID=
+
+# Nvidia LLaMA
+NVIDIA_API_KEY=
+
+# Resend Email
 RESEND_API_KEY=
-NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ```
 
 ## Database
@@ -57,4 +70,4 @@ npm run build
 - `/api/generate`
 - `/api/create-checkout`
 - `/api/create-portal`
-- `/api/webhook` (stubbed for Dodo integration)
+- `/api/webhook`

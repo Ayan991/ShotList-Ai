@@ -24,10 +24,7 @@ export default async function SavedWeddingsPage() {
           </div>
           <Link href="/dashboard" className="primary-button">New Wedding</Link>
         </div>
-        <div className="rounded border border-dashed border-line bg-surface p-10 text-center">
-          <p className="font-serif text-3xl text-text">No saved weddings yet.</p>
-          <p className="mt-3 font-sans text-sm text-muted">Generated plans will appear here automatically.</p>
-        </div>
+        <EmptyState />
       </div>
     );
   }
@@ -49,10 +46,7 @@ export default async function SavedWeddingsPage() {
       </div>
 
       {!weddings?.length ? (
-        <div className="rounded border border-dashed border-line bg-surface p-10 text-center">
-          <p className="font-serif text-3xl text-text">No saved weddings yet.</p>
-          <p className="mt-3 font-sans text-sm text-muted">Generated plans will appear here automatically.</p>
-        </div>
+        <EmptyState />
       ) : (
         <div className="grid gap-4">
           {weddings.map((wedding) => (
@@ -67,6 +61,22 @@ export default async function SavedWeddingsPage() {
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+function EmptyState() {
+  return (
+    <div className="grid min-h-80 place-items-center rounded border border-dashed border-line bg-surface p-8 text-center">
+      <div>
+        <p className="font-serif text-3xl text-text">No weddings saved yet.</p>
+        <p className="mt-3 max-w-sm font-sans text-sm leading-6 text-muted">
+          Generate your first wedding pack and save it to build your library.
+        </p>
+        <Link href="/dashboard" className="primary-button mt-6 inline-flex">
+          Generate Your First Wedding →
+        </Link>
+      </div>
     </div>
   );
 }

@@ -15,12 +15,12 @@ export default async function DashboardPage() {
 
   const { data: profile } = await supabase
     .from("users")
-    .select("id, email, name, plan, clerk_user_id")
+    .select("id, email, name, plan, clerk_user_id, onboarded")
     .eq("clerk_user_id", userId)
     .maybeSingle();
 
   if (!profile?.id) {
-    return <DashboardGenerator profile={{ plan: "free" }} usage={{ count: 0 }} />;
+    return <DashboardGenerator profile={{ plan: "free", onboarded: false }} usage={{ count: 0 }} />;
   }
 
   const { data: usage } = await supabase
@@ -30,5 +30,5 @@ export default async function DashboardPage() {
     .eq("month", getCurrentMonthKey())
     .maybeSingle();
 
-  return <DashboardGenerator profile={profile || { plan: "free" }} usage={usage || { count: 0 }} />;
+  return <DashboardGenerator profile={profile || { plan: "free", onboarded: false }} usage={usage || { count: 0 }} />;
 }
