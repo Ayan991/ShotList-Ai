@@ -14,7 +14,7 @@ export async function POST() {
     if (!env.dodoSecretKey) {
       return NextResponse.json({ error: "Dodo is not configured." }, { status: 500 });
     }
-    const url = "https://app.dodopayments.com";
+    const url = env.dodoCustomerPortalUrl;
     if (!url) {
       return NextResponse.json({ error: "Dodo customer portal URL is not configured." }, { status: 500 });
     }

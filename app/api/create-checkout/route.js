@@ -31,8 +31,12 @@ export async function POST(request) {
     return NextResponse.json({ error: "Invalid plan." }, { status: 400 });
   }
 
+  const directCheckoutUrl = plan === "pro" ? env.dodoProCheckoutUrl : env.dodoStudioCheckoutUrl;
   const productId = plan === "pro" ? env.dodoProProductId : env.dodoStudioProductId;
-  if (!productId || !env.dodoSecretKey) return NextResponse.json({ error: "Dodo is not configured." }, { status: 500 });
+  if (!env.dodoSecretKey) return NextResponse.json({ error: "Dodo is not configured." }, { status: 500 });
+  if (!directCheckoutUrl && !productId) {
+    return NextResponse.json({ error: "Dodo checkout is not configured." }, { status: 500 });
+  }
 
   try {
     const admin = createSupabaseAdminClient();
@@ -41,7 +45,9 @@ export async function POST(request) {
     const email = encodeURIComponent(sanitizeString(user?.emailAddresses?.[0]?.emailAddress || profile.email || "", 160));
     const name = encodeURIComponent(sanitizeString(profile?.name || "", 160));
     const uid = encodeURIComponent(profile.id);
-    const url = `https://checkout.dodopayments.com/buy/${encodeURIComponent(productId)}?email=${email}&name=${name}&external_id=${uid}&plan=${plan}`;
+    const baseUrl = directCheckoutUrl || `https://checkout.dodopayments.com/buy/${encodeURIComponent(productId)}`;
+    const joiner = baseUrl.includes("?") ? "&" : "?";
+    const url = `${baseUrl}${joiner}email=${email}&name=${name}&external_id=${uid}&plan=${plan}`;
     return NextResponse.json({ url });
   } catch (error) {
     return NextResponse.json({ error: error.message || "Checkout failed." }, { status: 500 });
