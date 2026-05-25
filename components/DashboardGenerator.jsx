@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Clipboard, Download, Loader2, Mail, RefreshCcw, Save, Wand2 } from "lucide-react";
 import { Toast } from "@/components/Toast";
 
@@ -24,7 +24,7 @@ const tabs = [
   ["clientEmail", "Client Email"]
 ];
 
-export function DashboardGenerator({ profile, usage }) {
+export function DashboardGenerator({ profile, usage, intakeLink, intakeSubmissions }) {
   const [form, setForm] = useState(initialForm);
   const [result, setResult] = useState(null);
   const [weddingId, setWeddingId] = useState(null);
@@ -36,6 +36,9 @@ export function DashboardGenerator({ profile, usage }) {
   const [sendToEmail, setSendToEmail] = useState("");
   const [sendingEmail, setSendingEmail] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(!profile?.onboarded);
+  const [publicIntakeLink, setPublicIntakeLink] = useState("");
+  const [submissions, setSubmissions] = useState(intakeSubmissions || []);
+  const [intakeLoading, setIntakeLoading] = useState(false);
 
   const isUnlimited = profile?.plan === "pro" || profile?.plan === "studio";
   const usedCount = usage?.count || 0;
@@ -47,6 +50,12 @@ export function DashboardGenerator({ profile, usage }) {
   }, []);
   const shotCount = result?.shotList?.reduce((a, c) => a + c.shots.length, 0) ?? 0;
   const timelineCount = result?.timeline?.length ?? 0;
+
+  useEffect(() => {
+    if (intakeLink?.token) {
+      setPublicIntakeLink(`${window.location.origin}/intake/${intakeLink.token}`);
+    }
+  }, [intakeLink?.token]);
 
   function update(field, value) {
     setForm((current) => ({ ...current, [field]: value }));
@@ -101,6 +110,55 @@ export function DashboardGenerator({ profile, usage }) {
     } catch (error) {
       setToast({ type: "error", message: error.message });
     }
+  }
+
+  async function ensureIntakeLink() {
+    setIntakeLoading(true);
+    try {
+      const response = await fetch("/api/intake-links", { method: "POST" });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Could not create intake link.");
+      const link = `${window.location.origin}/intake/${data.link.token}`;
+      setPublicIntakeLink(link);
+      await navigator.clipboard.writeText(link);
+      setToast({ type: "success", message: "Intake link created and copied." });
+    } catch (error) {
+      setToast({ type: "error", message: error.message });
+    } finally {
+      setIntakeLoading(false);
+    }
+  }
+
+  async function copyIntakeLink() {
+    if (!publicIntakeLink) return ensureIntakeLink();
+    await navigator.clipboard.writeText(publicIntakeLink);
+    setToast({ type: "success", message: "Intake link copied." });
+  }
+
+  async function applySubmission(submission) {
+    setForm((current) => ({
+      ...current,
+      coupleNames: submission.couple_names || "",
+      weddingDate: submission.wedding_date || "",
+      venueName: submission.venue_name || "",
+      venueType: submission.venue_type || current.venueType,
+      guestCount: submission.guest_count || current.guestCount,
+      photographyStyle: submission.photography_style || current.photographyStyle,
+      ceremonyTime: submission.ceremony_time || "",
+      coverageHours: submission.coverage_hours || "",
+      specialMoments: [submission.special_moments, submission.extra_details].filter(Boolean).join(" | ")
+    }));
+    setResult(null);
+    setWeddingId(null);
+    try {
+      await fetch(`/api/intake-submissions/${submission.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "used" })
+      });
+      setSubmissions((prev) => prev.map((item) => (item.id === submission.id ? { ...item, status: "used" } : item)));
+    } catch {}
+    setToast({ type: "success", message: "Submission loaded into generator." });
   }
 
   async function handleUpgrade(plan = "pro") {
@@ -230,6 +288,47 @@ export function DashboardGenerator({ profile, usage }) {
 
       <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
         <section className="rounded border border-line bg-surface p-5">
+          <div className="mb-5 rounded border border-line bg-obsidian p-4">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div>
+                <p className="font-sans text-xs font-semibold uppercase tracking-[0.16em] text-gold">Client Intake Link</p>
+                <p className="mt-1 font-sans text-xs text-muted">
+                  Send this to couples so they can fill wedding details. You generate the final plan here.
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <button onClick={copyIntakeLink} disabled={intakeLoading} className="btn-outline">
+                  <Clipboard size={16} /> Copy Link
+                </button>
+                <button onClick={ensureIntakeLink} disabled={intakeLoading} className="btn-outline">
+                  {intakeLoading ? <Loader2 className="animate-spin" size={16} /> : "Create Link"}
+                </button>
+              </div>
+            </div>
+            {publicIntakeLink ? (
+              <p className="mt-3 truncate font-sans text-xs text-text">{publicIntakeLink}</p>
+            ) : null}
+          </div>
+
+          {submissions.length ? (
+            <div className="mb-5 rounded border border-line bg-obsidian p-4">
+              <p className="font-sans text-xs font-semibold uppercase tracking-[0.16em] text-gold">Couple Submissions</p>
+              <div className="mt-3 grid gap-2">
+                {submissions.slice(0, 5).map((submission) => (
+                  <div key={submission.id} className="flex flex-col gap-2 rounded border border-line bg-surface p-3 md:flex-row md:items-center md:justify-between">
+                    <div>
+                      <p className="font-sans text-sm text-text">{submission.couple_names}</p>
+                      <p className="font-sans text-xs text-muted">{submission.venue_name || "No venue"} · {submission.wedding_date || "No date"}</p>
+                    </div>
+                    <button onClick={() => applySubmission(submission)} className="btn-outline">
+                      {submission.status === "used" ? "Use Again" : "Use in Generator"}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
           <div className="grid gap-4 md:grid-cols-2">
             <Input label="Couple names" value={form.coupleNames} onChange={(value) => update("coupleNames", value)} required />
             <Input label="Wedding date" type="date" value={form.weddingDate} onChange={(value) => update("weddingDate", value)} />
